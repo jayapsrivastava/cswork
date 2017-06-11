@@ -1,0 +1,25 @@
+To create vagrant base box -
+-----------------------------
+1. Execute the following command on -
+
+# packer build centos-7.3-x86_64.json
+
+2. Check the list of installed boxes in vagrant
+
+# vagrant box list
+
+3. To use the newly created basebox we need to add it to vagrant
+
+# vagrant box add --name csbasebox ./builds/centos-7.3.vmware.box
+# vagrant box list
+
+4. Test this box
+
+Option 1:  # vagrant init csbasebox
+           # vagrant up
+
+Option 2: # Create Vagrantfile
+          # Add ```csbasebox.vm.box = "csbasebox"```
+					# Vagrant up
+
+

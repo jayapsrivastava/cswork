@@ -1,0 +1,201 @@
+---
+# tasks file for packages
+
+- name: Check if the packages are installed
+  stat: path=~/.install_packages.done
+  register: install_packages_done
+
+- name: Exit if packages are already installed else continue
+  file: path=~/.install_packages.done state=touch
+  when: install_packages_done.stat.exists == False
+ 
+- name: Install Python Packages
+  yum: name=pygpgme state=latest 
+  when: install_packages_done.stat.exists == False
+
+- name: Install wget
+  yum: name=wget state=latest
+  when: install_packages_done.stat.exists == False
+
+- name: Adding cert.pem to /etc/pki/tls/cert.pem
+  template: src=cert.pem.j2 dest=/etc/pki/tls/cert.pem 
+  when: install_packages_done.stat.exists == False
+
+- selinux:
+    state: disabled
+
+- name: Check if /etc/yum.repos.d/ae.repo exists
+  stat: path=/etc/yum.repos.d/ae.repo
+  register: repo
+
+- name: Adding ae.repo to /etc/yum.repos.d
+  template: src=ae.repo.j2 dest=/etc/yum.repos.d/ae.repo
+
+- name: Adding lustre.repo to /etc/yum.repos.d/
+  template: src=lustre.repo.j2 dest=/etc/yum.repos.d/lustre.repo
+
+- name: Adding grafana_stable.repo to /etc/yum.repos.d/grafana_stable.repo
+  template: src=grafana_stable.repo.j2 dest=/etc/yum.repos.d/grafana_stable.repo
+
+- name: Download EPEL Repo - Centos/RHEL 7
+  get_url: url=http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm dest=/tmp/epel-release-latest-7.noarch.rpm
+  when: install_packages_done.stat.exists == False
+
+- name: Install EPEL repo
+  yum:
+    name: /tmp/epel-release-latest-7.noarch.rpm
+    state: present
+
+
+- name: Install Intel External Basic Issuing CA 3B cert
+  shell: cd /etc/pki/ca-trust/source/anchors/ && wget --no-check-certificate  https://de.ssl-tools.net/certificates/478bcb7431bf91fab995f8a6ddf5a9efa817a892.pem && update-ca-trust extract
+
+
+- name: Installing zfs from zfsonlinux.org
+  yum:
+    name: http://download.zfsonlinux.org/epel/zfs-release.el7_3.noarch.rpm
+    state: latest 
+  when: install_packages_done.stat.exists == False
+
+- name: Execute yum makecache
+  shell: yum makecache
+
+- name: Ensure the yum package index is up to Date
+  yum:
+    update_cache: yes
+    name: '*'
+    state: latest
+
+
+- name: Install list of packages
+  yum: name={{item}} state=installed
+  with_items:
+       - vim 
+       - git
+       - autoconf
+       - automake 
+       - libtool
+       - glib2-devel
+       - libattr-devel 
+       - mysql-devel 
+       - mailx 
+       - bison 
+       - flex
+       - libuuid-devel 
+  when: install_packages_done.stat.exists == False 
+
+- name: Install list of remaining packages..
+  yum: name={{item}} state=installed
+  with_items:
+       - rpm-build 
+       - gcc-c++
+       - glibc-devel
+       - fuse-devel 
+       - libattr-devel 
+       - make 
+       - curl-devel 
+       - curl 
+       - openssl-devel
+       - openssl
+       - libxml2-devel
+       - graphite-api 
+       - graphite-web 
+       - mariadb-server
+       - python-carbon 
+       - nmap-ncat
+       - python-pip
+       - python-devel
+       - dkms
+
+- name: Install list of remaining packages..
+  yum: name={{item}} state=installed
+  with_items:
+       - lustre-client
+       - lustre
+       - robinhood-adm 
+       - robinhood-debuginfo 
+       - robinhood-lustre 
+       - robinhood-tests
+       - pygpgme 
+       - yum-utils
+       - gem
+       - ruby
+       - robinhood-tools 
+       - robinhood-webgui
+       - rpmrebuild 
+       - python-docutils 
+       - attr 
+       - pyxattr
+       - marfs 
+       - python-ds3-sdk 
+       - python-marfs 
+       - python-lustreapi
+       - grafana
+       - pftool
+       - lemur-plugin-py
+       - python-fvio
+       - openmpi-devel
+       - file_tree_generator
+       - net-tools
+  when: install_packages_done.stat.exists == False
+#  when: install_packages_done.exists == False
+
+- name: Upgrade pip
+  pip: name=pip extra_args=--upgrade
+  when: install_packages_done.stat.exists == False
+
+- name: Install MySQL-python
+  pip: name=MySQL-python state=present
+  when: install_packages_done.stat.exists == False
+
+- name: Get the --kernel-release 
+  shell: uname -r
+  register: ret_uname
+
+- name: Install kernel-devel
+  yum: name="kernel-devel-{{ret_uname.stdout}}" state=latest
+  when: install_packages_done.stat.exists == False
+
+- name: Install kernel-devel & zfs - dkms
+  shell: yum --disablerepo=* --enablerepo=zfs install -y kernel-devel zfs
+  when: install_packages_done.stat.exists == False
+
+- name: Query if kmod-lustre installed
+  shell: rpm -qa | grep kmod-lustre
+  register: ret_kmod
+  ignore_errors: yes
+
+- name: Erase rpm kmod-lustre
+  command: "rpm -e {{ret_kmod.stdout}} --nodeps"
+  when: ret_kmod.rc == 0
+
+- name: Query if spl-dkms is installed or not, to get the version
+  command: rpm -q spl-dkms
+  args:
+    warn: no
+  register: result_pkg
+  failed_when: result_pkg.rc > 0
+
+- name: Get the version
+  shell: rpm -q spl-dkms | cut -d'-' -f3
+  register: version
+
+- name: Install spl using dkms
+  command: "/usr/sbin/dkms install -m spl -v {{version.stdout}}"
+  when: install_packages_done.stat.exists == False
+
+- name: Install zfs using dkms
+  command: "/usr/sbin/dkms install -m zfs -v {{version.stdout}}"
+  when: install_packages_done.stat.exists == False
+
+- name: Install lustre-dkms
+  yum: name=lustre-dkms state=latest
+  when: install_packages_done.stat.exists == False
+
+- name: Install lustre using dkms
+  command: /usr/sbin/dkms install -m lustre -v 2.9.0 
+  when: install_packages_done.stat.exists == False
+
+- name: Create common directory at remote for ansible
+  file: path=$HOME/ansible_scripts state=directory mode=0755
+
