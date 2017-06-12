@@ -47,7 +47,7 @@
         "scripts/common/sshd.sh",
         "scripts/centos/networking.sh",
         "scripts/common/vagrant.sh",
-        "scripts/common/vmware.sh",
+        "scripts/common/ansible.sh",
         "scripts/centos/cleanup.sh",
         "scripts/common/minimize.sh"
       ],
@@ -56,6 +56,7 @@
     {
       "type": "ansible-local",
       "playbook_file": "csbasebox/site.yml"
+			"galaxy_file": "requirements.yml"
     }
   ],
   "variables": {
