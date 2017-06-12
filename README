@@ -20,6 +20,6 @@ Option 1:  # vagrant init csbasebox
 
 Option 2: # Create Vagrantfile
           # Add ```csbasebox.vm.box = "csbasebox"```
-					# Vagrant up
+	  # Vagrant up
 
 
