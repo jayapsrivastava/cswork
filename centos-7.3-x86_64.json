@@ -7,7 +7,7 @@
       "boot_wait": "10s",
       "disk_size": "{{user `disk_size`}}",
       "guest_os_type": "centos-64",
-      "headless": "{{ user `headless` }}",
+      "headless": true,
       "http_directory": "http",
       "iso_checksum": "{{user `iso_checksum`}}",
       "iso_checksum_type": "{{user `iso_checksum_type`}}",
@@ -47,16 +47,25 @@
         "scripts/common/sshd.sh",
         "scripts/centos/networking.sh",
         "scripts/common/vagrant.sh",
-        "scripts/common/ansible.sh",
-        "scripts/centos/cleanup.sh",
-        "scripts/common/minimize.sh"
+        "scripts/centos/vmware.sh",
+        "scripts/common/ansible.sh"
       ],
       "type": "shell"
     },
     {
       "type": "ansible-local",
-      "playbook_file": "csbasebox/site.yml"
-			"galaxy_file": "requirements.yml"
+      "playbook_file": "csbasebox/site.yml",
+	  "role_paths": [
+           "csbasebox/roles/install"
+	  ]
+    },
+    { 
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+      "scripts": [
+        "scripts/centos/cleanup.sh",
+        "scripts/common/minimize.sh"
+      ],
+	  "type": "shell"
     }
   ],
   "variables": {
