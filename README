@@ -2,7 +2,7 @@ To create vagrant base box -
 -----------------------------
 1. Execute the following command on -
 
-# packer build centos-7.3-x86_64.json
+# packer build base_image-0.1-x86_64.json
 
 2. Check the list of installed boxes in vagrant
 
@@ -10,12 +10,14 @@ To create vagrant base box -
 
 3. To use the newly created basebox we need to add it to vagrant
 
-# vagrant box add --name csbasebox ./builds/centos-7.3.vmware.box
+# vagrant box add --name baseimage ./builds/base_image-0.1-x86_64.json
 # vagrant box list
 
 4. Test this box
 
-Option 1:  # vagrant init csbasebox
+Option 1:  # vagrant init baseimage
+           [This creates a Vagrantfile and append this line in the file since VMware Tool has not installed automatically]
+	   # config.vm.synced_folder ".", "/vagrant", type: "rsync"
            # vagrant up
 
 Option 2: # Create Vagrantfile
